@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
+import { http } from '../lib/http';
 
 const DashboardPage = () => {
   const [userData, setUserData] = useState(null);
@@ -13,7 +13,7 @@ const DashboardPage = () => {
     try {
       const token = localStorage.getItem('fegoToken');
       if (!token) throw new Error('No auth token');
-      const res = await axios.get('http://localhost:5000/api/users/profile', {
+      const res = await http.get('/api/users/profile', {
         headers: { 'x-auth-token': token }
       });
       setUserData(res.data);
@@ -28,7 +28,7 @@ const DashboardPage = () => {
     try {
       const token = localStorage.getItem('fegoToken');
       if (!token) return;
-      const res = await axios.get('http://localhost:5000/api/users/notifications', {
+      const res = await http.get('/api/users/notifications', {
         headers: { 'x-auth-token': token }
       });
       const count = (res.data || []).filter(n => !n.isRead).length;
@@ -64,7 +64,7 @@ const DashboardPage = () => {
     const token = localStorage.getItem('fegoToken');
     if (!token) return;
     try {
-      const res = await axios.get(`http://localhost:5000/api/paystack/verify-payment/${reference}`, {
+      const res = await http.get(`/api/paystack/verify-payment/${reference}`, {
         headers: { 'x-auth-token': token }
       });
       console.log('Verify:', res.data);

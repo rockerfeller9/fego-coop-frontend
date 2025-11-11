@@ -10,7 +10,9 @@ const NotificationPage = () => {
     try {
       const token = localStorage.getItem('fegoToken');
       if (!token) return;
-      const res = await http.get('/api/users/notifications', { headers: { 'x-auth-token': token } });
+      const res = await http.get('/api/users/notifications', {
+        headers: { 'x-auth-token': token }
+      });
       setNotifications(res.data || []);
     } catch (e) {
       console.error('Fetch notifications failed:', e);
@@ -22,7 +24,9 @@ const NotificationPage = () => {
   const markAsRead = async (id, link) => {
     try {
       const token = localStorage.getItem('fegoToken');
-      await http.post(`/api/users/notifications/read/${id}`, {}, { headers: { 'x-auth-token': token } });
+      await http.post(`/api/users/notifications/read/${id}`, {}, {
+        headers: { 'x-auth-token': token }
+      });
       await fetchNotifications();
       if (link) navigate(link);
     } catch (e) {
