@@ -10,10 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@paystack/inline-js": "^2.22.7",
     "axios": "^1.13.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-paystack": "^6.0.0",
     "react-router-dom": "^7.9.5"
   },
   "devDependencies": {
