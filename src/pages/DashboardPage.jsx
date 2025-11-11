@@ -80,6 +80,7 @@ const DashboardPage = () => {
   };
 
   if (loading) return <h2>Loading Dashboard...</h2>;
+
   if (error) {
     return (
       <div>
