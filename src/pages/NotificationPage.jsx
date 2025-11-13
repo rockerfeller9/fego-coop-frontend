@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { http } from '../lib/http';
 import { useNavigate } from 'react-router-dom';
+import { http } from '../lib/http';
 
 const NotificationPage = () => {
   const [notifications, setNotifications] = useState([]);
   const navigate = useNavigate();
 
   const fetchNotifications = async () => {
+    const token = localStorage.getItem('fegoToken');
+    if (!token) return;
     try {
-      const token = localStorage.getItem('fegoToken');
-      if (!token) return;
       const res = await http.get('/api/users/notifications', {
         headers: { 'x-auth-token': token }
       });
@@ -22,8 +22,8 @@ const NotificationPage = () => {
   useEffect(() => { fetchNotifications(); }, []);
 
   const markAsRead = async (id, link) => {
+    const token = localStorage.getItem('fegoToken');
     try {
-      const token = localStorage.getItem('fegoToken');
       await http.post(`/api/users/notifications/read/${id}`, {}, {
         headers: { 'x-auth-token': token }
       });
@@ -45,22 +45,22 @@ const NotificationPage = () => {
             key={note._id}
             onClick={() => markAsRead(note._id, note.link)}
             style={{
-              padding: '10px',
+              padding: 10,
               margin: '6px 0',
               cursor: 'pointer',
-              backgroundColor: note.isRead ? '#f7f7f7' : '#fff',
+              background: note.isRead ? '#f7f7f7' : '#fff',
               border: '1px solid #ccc',
-              borderLeft: note.isRead ? '4px solid #9c9c9c' : '4px solid #0077ff'
+              borderLeft: note.isRead ? '4px solid #999' : '4px solid #0077ff'
             }}
           >
-            <strong>{note.isRead ? '✅' : '🔔'} {note.message}</strong>
+            <strong>{note.message}</strong>
             <small style={{ display: 'block', color: '#555' }}>
               {new Date(note.createdAt).toLocaleString()}
             </small>
           </div>
         ))
       )}
-      <button onClick={() => navigate('/dashboard')} style={{ marginTop: 20 }}>Go to Dashboard</button>
+      <button onClick={() => navigate('/dashboard')} style={{ marginTop: 20 }}>Dashboard</button>
     </div>
   );
 };
