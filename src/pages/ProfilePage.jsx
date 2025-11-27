@@ -1,6 +1,6 @@
 // src/pages/ProfilePage.jsx
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { http } from '../lib/http'; // Ensure this path is correct
 import { useNavigate } from 'react-router-dom';
 
 const ProfilePage = () => {
@@ -14,11 +14,12 @@ const ProfilePage = () => {
             const token = localStorage.getItem('fegoToken');
             try {
                 const config = { headers: { 'x-auth-token': token } };
-                const res = await axios.get('http://localhost:5000/api/users/profile', config);
+                const res = await http.get('/users/profile', config); // Changed from /api/users/profile
                 // Set the initial form data with current user info
                 setFormData({ fullName: res.data.fullName, email: res.data.email });
             } catch (err) {
                 console.error("Could not fetch profile data:", err);
+                setMessage('Failed to load profile data.');
             }
         };
         fetchProfile();
@@ -33,7 +34,7 @@ const ProfilePage = () => {
 
         try {
             const config = { headers: { 'x-auth-token': token } };
-            const res = await axios.put('http://localhost:5000/api/users/profile/update', formData, config);
+            const res = await http.put('/users/profile/update', formData, config); // Changed from /api/users/profile/update
             
             setMessage(res.data.msg);
             // Optional: Update global state or re-fetch dashboard data here

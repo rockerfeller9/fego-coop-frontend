@@ -1,21 +1,15 @@
 import axios from 'axios';
 
-const api = axios.create({
-    baseURL: 'http://localhost:5000/api'
-});
+const baseURL = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'; // Corrected base URL assignment
+const api = axios.create({ baseURL });
 
 // Add a request interceptor to add the token to all requests
-api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('fegoToken');
-        if (token) {
-            config.headers['x-auth-token'] = token;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
+api.interceptors.request.use(cfg => {
+  const token = localStorage.getItem('fegoToken');
+  if (token) {
+    cfg.headers.Authorization = `Bearer ${token}`; // Add token to headers
+  }
+  return cfg;
+});
 
 export default api;

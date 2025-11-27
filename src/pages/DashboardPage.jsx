@@ -1,70 +1,103 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { http } from '../lib/http';
+import React, { useEffect, useState } from 'react';
+import { Box, Heading, Text, VStack, Button, Spinner } from '@chakra-ui/react';
+import { useNavigate } from 'react-router-dom';
+import { http } from '../lib/http'; // Changed from axiosInstance
 
-const DashboardPage = () => {
-  const [userData, setUserData] = useState(null);
-  const [unreadCount, setUnreadCount] = useState(0);
+export default function DashboardPage() {
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const fetchProfile = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('fegoToken');
-      if (!token) return navigate('/login');
-      const res = await http.get('/api/users/profile', {
-        headers: { 'x-auth-token': token }
-      });
-      setUserData(res.data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await http.get('/users/me'); // Removed /api prefix
+        console.log('Profile loaded:', res.data);
+        setUser(res.data);
+      } catch (err) {
+        console.error('Profile fetch error:', err);
+        setError('Failed to load profile');
+        if (err.response?.status === 401) {
+          localStorage.removeItem('fegoToken');
+          navigate('/login');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
   }, [navigate]);
 
-  const fetchNotificationCount = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('fegoToken');
-      if (!token) return;
-      const res = await http.get('/api/users/notifications', {
-        headers: { 'x-auth-token': token }
-      });
-      setUnreadCount((res.data || []).filter(n => !n.isRead).length);
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
+  const handleLogout = () => {
+    localStorage.removeItem('fegoToken');
+    localStorage.removeItem('role');
+    navigate('/login');
+  };
 
-  useEffect(() => {
-    fetchProfile();
-    fetchNotificationCount();
-  }, [fetchProfile, fetchNotificationCount]);
+  if (loading) {
+    return (
+      <Box p={8} textAlign="center">
+        <Spinner size="xl" />
+        <Text mt={4}>Loading...</Text>
+      </Box>
+    );
+  }
 
-  if (loading) return <h2>Loading Dashboard...</h2>;
+  if (error) {
+    return (
+      <Box p={8}>
+        <Text color="red.500" fontSize="lg">{error}</Text>
+        <Button onClick={() => navigate('/login')} mt={4}>
+          Back to Login
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Box p={8}>
+        <Text>No user data available</Text>
+        <Button onClick={handleLogout} mt={4}>Logout</Button>
+      </Box>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: 800, margin: '20px auto' }}>
-      <div style={{ float: 'right' }}>
-        <Link to="/notifications">🔔 {unreadCount} unread</Link>
-      </div>
-      <h2>Welcome {userData?.fullName}</h2>
-      <div style={{ border: '1px solid #ccc', padding: 15, marginTop: 15 }}>
-        <p><strong>Email:</strong> {userData?.email}</p>
-        <p><strong>Total Contributions:</strong> NGN {Number(userData?.totalContributions || 0).toFixed(2)}</p>
-        <p><strong>Current Loan Balance:</strong> NGN {Number(userData?.currentLoanBalance || 0).toFixed(2)}</p>
-        <Link to="/history">View Detailed History</Link>
-      </div>
-      <div style={{ marginTop: 20 }}>
-        <Link to="/apply-loan"><button>Apply Loan</button></Link>
-        <Link to="/contribute" style={{ marginLeft: 10 }}><button>Contribute</button></Link>
-        <Link to="/profile" style={{ marginLeft: 10 }}><button>Profile</button></Link>
-        <button style={{ marginLeft: 10 }} onClick={() => { localStorage.removeItem('fegoToken'); navigate('/login'); }}>
-          Logout
-        </button>
-      </div>
-    </div>
-  );
-};
+    <Box p={8} maxW="800px" mx="auto">
+      <VStack spacing={6} align="stretch">
+        <Heading size="lg">Dashboard</Heading>
+        
+        <Box p={6} bg="gray.50" rounded="md" shadow="sm">
+          <VStack spacing={3} align="stretch">
+            <Text fontSize="xl" fontWeight="bold">
+              Welcome, {user.firstName} {user.lastName}!
+            </Text>
+            <Text>
+              <strong>Email:</strong> {user.email}
+            </Text>
+            <Text>
+              <strong>Membership ID:</strong> {user.membershipId}
+            </Text>
+            <Text>
+              <strong>Role:</strong> {user.role}
+            </Text>
+            <Text>
+              <strong>Status:</strong> {user.isActive ? 'Active' : 'Inactive'}
+            </Text>
+          </VStack>
+        </Box>
 
-export default DashboardPage;
+        <Button 
+          onClick={handleLogout} 
+          colorScheme="red" 
+          size="lg"
+          maxW="200px"
+        >
+          Logout
+        </Button>
+      </VStack>
+    </Box>
+  );
+}

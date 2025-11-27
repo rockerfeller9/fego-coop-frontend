@@ -1,115 +1,156 @@
 // src/pages/LoanApplicationPage.jsx
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import {
+  Container,
+  Box,
+  Heading,
+  FormControl,
+  FormLabel,
+  Input,
+  Textarea,
+  Button,
+  VStack,
+  useToast,
+  Select,
+  Text,
+  NumberInput,
+  NumberInputField
+} from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
+import { http } from '../lib/http'; // Ensure this path is correct
 
-const LoanApplicationPage = () => {
+export default function LoanApplicationPage() {
+  const [form, setForm] = useState({
+    amount: '',
+    duration: '',
+    purpose: ''
+  });
+  const [loading, setLoading] = useState(false);
   const [membershipId, setMembershipId] = useState('');
-  const [email, setEmail] = useState('');
-  const [amountRequested, setAmountRequested] = useState('');
-  const [purpose, setPurpose] = useState('');
-  const [repaymentPeriod, setRepaymentPeriod] = useState('');
-  const [message, setMessage] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    (async () => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem('fegoToken');
+      if (!token) return;
+
       try {
-        const token = localStorage.getItem('fegoToken');
-        if (!token) return;
-        const res = await axios.get('http://localhost:5000/api/users/profile', {
+        const res = await http.get('/users/profile', {
           headers: { 'x-auth-token': token }
         });
         setMembershipId(res.data.membershipId || '');
-        setEmail(res.data.email || '');
-      } catch (e) {
-        console.error(e);
-        setMessage('Failed to load profile.');
+      } catch (err) {
+        console.error('Failed to fetch profile:', err);
       }
-    })();
+    };
+
+    fetchProfile();
   }, []);
 
-  const submitLoan = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage('');
-    const amt = Number(amountRequested);
-    const months = Number(repaymentPeriod);
-    if (!amt || amt <= 0) return setMessage('Enter a valid loan amount.');
-    if (!months || months <= 0) return setMessage('Enter a valid repayment period (months).');
-    if (!purpose.trim()) return setMessage('Enter a loan purpose.');
-
+    setLoading(true);
     try {
-      setSubmitting(true);
       const token = localStorage.getItem('fegoToken');
-      const res = await axios.post(
-        // If your backend uses a different endpoint (e.g., /api/loans), update this path.
-        'http://localhost:5000/api/loans/apply',
-        { membershipId, amountRequested: amt, purpose, repaymentPeriod: months },
-        { headers: { 'x-auth-token': token, 'Content-Type': 'application/json' } }
-      );
-      setMessage(res.data.msg || 'Loan application submitted.');
-      // Optional: navigate to dashboard after a short delay
-      setTimeout(() => navigate('/dashboard'), 800);
-    } catch (e) {
-      console.error(e);
-      setMessage(e.response?.data?.msg || 'Loan application failed.');
+      await http.post('/loans/apply', {
+        membershipId,
+        amountRequested: parseFloat(form.amount),
+        purpose: form.purpose,
+        repaymentPeriod: parseInt(form.duration)
+      }, {
+        headers: { 'x-auth-token': token }
+      });
+      toast({ 
+        title: 'Loan application submitted', 
+        description: 'Your application is under review',
+        status: 'success' 
+      });
+      navigate('/dashboard');
+    } catch (err) {
+      toast({ 
+        title: 'Application failed', 
+        description: err.response?.data?.message || 'Please try again',
+        status: 'error' 
+      });
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  return (
-    <div style={{ maxWidth: 520, margin: '30px auto' }}>
-      <h2>Apply for a Loan</h2>
-      {message && <p>{message}</p>}
-      <form onSubmit={submitLoan}>
-        <div style={{ marginBottom: 12 }}>
-          <label>Membership ID</label><br />
-          <input type="text" value={membershipId} readOnly style={{ width: '100%', padding: 8, background: '#f5f5f5' }} />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label>Email</label><br />
-          <input type="email" value={email} readOnly style={{ width: '100%', padding: 8, background: '#f5f5f5' }} />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label>Amount Requested (NGN)</label><br />
-          <input
-            type="number"
-            min="1000"
-            value={amountRequested}
-            onChange={(e) => setAmountRequested(e.target.value)}
-            required
-            style={{ width: '100%', padding: 8 }}
-          />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label>Repayment Period (months)</label><br />
-          <input
-            type="number"
-            min="1"
-            value={repaymentPeriod}
-            onChange={(e) => setRepaymentPeriod(e.target.value)}
-            required
-            style={{ width: '100%', padding: 8 }}
-          />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label>Purpose</label><br />
-          <textarea
-            value={purpose}
-            onChange={(e) => setPurpose(e.target.value)}
-            rows={4}
-            required
-            style={{ width: '100%', padding: 8 }}
-          />
-        </div>
-        <button type="submit" disabled={submitting} style={{ padding: '8px 16px' }}>
-          {submitting ? 'Submitting...' : 'Submit Application'}
-        </button>
-      </form>
-    </div>
-  );
-};
+  const interestRate = 5;
+  const calculatedTotal = form.amount ? parseFloat(form.amount) * (1 + interestRate / 100) : 0;
+  const monthlyPayment = form.amount && form.duration ? calculatedTotal / parseInt(form.duration) : 0;
 
-export default LoanApplicationPage;
+  return (
+    <Container maxW="2xl" py={8}>
+      <Box mb={6}>
+        <Heading size="lg" mb={2}>Apply for Loan</Heading>
+        <Text color="gray.600">Fill out the form below to apply for a loan</Text>
+      </Box>
+
+      <Box as="form" onSubmit={handleSubmit} borderWidth="1px" borderRadius="lg" p={6}>
+        <VStack spacing={4} align="stretch">
+          <FormControl isRequired>
+            <FormLabel htmlFor="loan-amount">Loan Amount (₦)</FormLabel>
+            <NumberInput min={1000}>
+              <NumberInputField
+                name="amount"
+                id="loan-amount"
+                autoComplete="off"
+                value={form.amount}
+                onChange={(e) => setForm(s => ({ ...s, amount: e.target.value }))}
+                placeholder="Enter amount"
+              />
+            </NumberInput>
+          </FormControl>
+
+          <FormControl isRequired>
+            <FormLabel htmlFor="loan-duration">Duration (months)</FormLabel>
+            <Select
+              name="duration"
+              id="loan-duration"
+              autoComplete="off"
+              value={form.duration}
+              onChange={(e) => setForm(s => ({ ...s, duration: e.target.value }))}
+              placeholder="Select duration"
+            >
+              <option value="6">6 months</option>
+              <option value="12">12 months</option>
+              <option value="18">18 months</option>
+              <option value="24">24 months</option>
+              <option value="36">36 months</option>
+            </Select>
+          </FormControl>
+
+          <FormControl isRequired>
+            <FormLabel htmlFor="loan-purpose">Purpose of Loan</FormLabel>
+            <Textarea
+              name="purpose"
+              id="loan-purpose"
+              autoComplete="off"
+              value={form.purpose}
+              onChange={(e) => setForm(s => ({ ...s, purpose: e.target.value }))}
+              placeholder="Describe why you need this loan"
+              rows={4}
+            />
+          </FormControl>
+
+          {form.amount && form.duration && (
+            <Box p={4} bg="blue.50" borderRadius="md">
+              <VStack align="stretch" spacing={2}>
+                <Text><strong>Interest Rate:</strong> {interestRate}%</Text>
+                <Text><strong>Total Repayment:</strong> ₦{calculatedTotal.toLocaleString()}</Text>
+                <Text><strong>Monthly Payment:</strong> ₦{monthlyPayment.toLocaleString()}</Text>
+              </VStack>
+            </Box>
+          )}
+
+          <Button colorScheme="blue" type="submit" isLoading={loading} size="lg">
+            Submit Application
+          </Button>
+        </VStack>
+      </Box>
+    </Container>
+  );
+}

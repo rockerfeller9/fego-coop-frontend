@@ -1,66 +1,70 @@
 // src/pages/RegisterPage.jsx
 import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate, Link } from 'react-router-dom';
+import {
+  Box,
+  Button,
+  Input,
+  VStack,
+  Heading,
+  Text
+} from '@chakra-ui/react';
+import { useNavigate } from 'react-router-dom';
+import { http } from '../lib/http'; // Ensure this path is correct
 
-const RegisterPage = () => {
-    const [formData, setFormData] = useState({
-        username: '',
-        email: '',
-        password: '',
-        fullName: '',
-        membershipId: ''
-    });
-    const [message, setMessage] = useState('');
-    const navigate = useNavigate();
+export default function RegisterPage() {
+  const [form, setForm] = useState({
+    username: '',
+    email: '',
+    fullName: '',
+    membershipId: '',
+    password: ''
+  });
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-    const { username, email, password, fullName, membershipId } = formData;
+  const onChange = (e) => {
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  };
 
-    const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await http.post('/users/register', { // Changed from /api/users/register
+        username: form.username.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        fullName: form.fullName.trim(),
+        membershipId: form.membershipId.trim()
+      });
+      if (res.status === 201) {
+        navigate('/login');
+      } else {
+        setError('Unexpected response');
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const onSubmit = async e => {
-        e.preventDefault();
-        setMessage('Registering...');
-        try {
-            const config = {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            };
-            const body = JSON.stringify(formData);
-            
-            // Send POST request to our backend API registration endpoint
-            const res = await axios.post('http://localhost:5000/api/users/register', body, config);
-            
-            setMessage('Registration successful! Redirecting to login...');
-            console.log(res.data);
-            
-            // Redirect to login page after a short delay
-            setTimeout(() => {
-                navigate('/login');
-            }, 2000);
-
-        } catch (err) {
-            console.error(err.response.data);
-            setMessage(err.response.data.msg || 'Registration failed. Please try again.');
-        }
-    };
-
-    return (
-        <div>
-            <h2>Member Self-Registration</h2>
-            <p>{message}</p>
-            <form onSubmit={e => onSubmit(e)}>
-                <input type="text" placeholder="Username" name="username" value={username} onChange={e => onChange(e)} required />
-                <input type="email" placeholder="Email Address" name="email" value={email} onChange={e => onChange(e)} required />
-                <input type="password" placeholder="Password (min 6 chars)" name="password" value={password} onChange={e => onChange(e)} required minLength="6" />
-                <input type="text" placeholder="Full Name" name="fullName" value={fullName} onChange={e => onChange(e)} required />
-                <input type="text" placeholder="Membership ID (e.g., FEGO02-003)" name="membershipId" value={membershipId} onChange={e => onChange(e)} required />
-                <button type="submit">Register</button>
-            </form>
-            <p>Already have an account? <Link to="/login">Sign In</Link></p>
-        </div>
-    );
-};
-
-export default RegisterPage;
+  return (
+    <Box maxW="sm" mx="auto" mt={16} p={6} bg="white" rounded="md" shadow="md">
+      <Heading size="md" mb={4}>Register</Heading>
+      <form onSubmit={handleSubmit}>
+        <VStack spacing={4} align="stretch">
+          <Input name="username" placeholder="Username" value={form.username} onChange={onChange} required />
+          <Input name="email" type="email" placeholder="Email" value={form.email} onChange={onChange} required />
+          <Input name="fullName" placeholder="Full Name" value={form.fullName} onChange={onChange} required />
+          <Input name="membershipId" placeholder="Membership ID" value={form.membershipId} onChange={onChange} required />
+          <Input name="password" type="password" placeholder="Password" value={form.password} onChange={onChange} required />
+          {error && <Text color="red.500" fontSize="sm">{error}</Text>}
+          <Button type="submit" colorScheme="green" isLoading={loading}>Create Account</Button>
+        </VStack>
+      </form>
+    </Box>
+  );
+}

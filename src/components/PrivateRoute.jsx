@@ -1,11 +1,17 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 
-const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem('fegoToken');
-  const location = useLocation();
-  if (!token) return <Navigate to="/login" replace state={{ from: location }} />;
+export default function PrivateRoute({ children, adminOnly = false }) {
+  const token = localStorage.getItem('fegoToken'); // Changed from 'token'
+  const role = localStorage.getItem('role');
+  
+  if (!token) return <Navigate to="/login" replace />;
+  if (adminOnly && role !== 'admin') return <Navigate to="/dashboard" replace />;
+  
   return children;
-};
+}
 
-export default PrivateRoute;
+// Example usage:
+// <Route path="/admin-dashboard" element={
+//   <PrivateRoute adminOnly={true}><AdminDashboardPage /></PrivateRoute>
+// } />

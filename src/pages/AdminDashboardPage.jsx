@@ -1,6 +1,6 @@
 // src/pages/AdminDashboardPage.jsx
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { http } from '../lib/http'; // Ensure this path is correct
 import { useNavigate } from 'react-router-dom';
 
 const AdminDashboardPage = () => {
@@ -17,7 +17,7 @@ const AdminDashboardPage = () => {
 
   const fetchLoans = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/admin/loans', {
+      const res = await http.get('/admin/loans', {
         headers: { 'x-auth-token': token }
       });
       setPendingLoans(res.data.filter(loan => loan.status === 'Pending'));
@@ -35,11 +35,9 @@ const AdminDashboardPage = () => {
 
   const handleApprove = async (loanId) => {
     try {
-      const res = await axios.patch(
-        `http://localhost:5000/api/admin/loans/${loanId}/approve`,
-        {},
-        { headers: { 'x-auth-token': token } }
-      );
+      const res = await http.patch(`/admin/loans/${loanId}/approve`, {}, {
+        headers: { 'x-auth-token': token }
+      });
       setMessage(res.data.msg || 'Loan approved');
       fetchLoans(); // Refresh list
     } catch (err) {
@@ -50,11 +48,9 @@ const AdminDashboardPage = () => {
 
   const handleReject = async (loanId) => {
     try {
-      const res = await axios.patch(
-        `http://localhost:5000/api/admin/loans/${loanId}/reject`,
-        {},
-        { headers: { 'x-auth-token': token } }
-      );
+      const res = await http.patch(`/admin/loans/${loanId}/reject`, {}, {
+        headers: { 'x-auth-token': token }
+      });
       setMessage(res.data.msg || 'Loan rejected');
       fetchLoans(); // Refresh list
     } catch (err) {
