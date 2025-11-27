@@ -27,6 +27,7 @@ export default function LoanApplicationPage() {
   });
   const [loading, setLoading] = useState(false);
   const [membershipId, setMembershipId] = useState('');
+  const [error, setError] = useState('');
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -50,6 +51,7 @@ export default function LoanApplicationPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
     try {
       const token = localStorage.getItem('fegoToken');
@@ -68,6 +70,8 @@ export default function LoanApplicationPage() {
       });
       navigate('/dashboard');
     } catch (err) {
+      console.error('Loan application error:', err);
+      setError(err.response?.data?.msg || 'Failed to submit loan application');
       toast({ 
         title: 'Application failed', 
         description: err.response?.data?.message || 'Please try again',
@@ -145,6 +149,8 @@ export default function LoanApplicationPage() {
               </VStack>
             </Box>
           )}
+
+          {error && <Text color="red.500" fontSize="sm">{error}</Text>}
 
           <Button colorScheme="blue" type="submit" isLoading={loading} size="lg">
             Submit Application

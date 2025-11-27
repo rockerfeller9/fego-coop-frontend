@@ -16,19 +16,16 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      console.log('Login POST -> /users/login');
-      const res = await http.post('/users/login', { // Removed /api prefix
+      const res = await http.post('/users/login', {
         email: identifier,
         password
       });
       const { token } = res.data;
       if (!token) throw new Error('Token missing');
       localStorage.setItem('fegoToken', token);
-      console.log('Token saved:', token);
       navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
-      console.error('Response:', err.response?.data);
       setError(err.response?.data?.msg || 'Login failed');
     } finally {
       setLoading(false);

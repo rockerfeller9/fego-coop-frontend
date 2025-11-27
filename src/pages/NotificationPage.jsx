@@ -1,68 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Box, VStack, Heading, Text, Spinner } from '@chakra-ui/react';
 import { http } from '../lib/http';
 
-const NotificationPage = () => {
+export default function NotificationPage() {
   const [notifications, setNotifications] = useState([]);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
-  const fetchNotifications = async () => {
-    const token = localStorage.getItem('fegoToken');
-    if (!token) return;
-    try {
-      const res = await http.get('/api/users/notifications', {
-        headers: { 'x-auth-token': token }
-      });
-      setNotifications(res.data || []);
-    } catch (e) {
-      console.error('Fetch notifications failed:', e);
-    }
-  };
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await http.get('/users/notifications');
+        setNotifications(res.data);
+      } catch (err) {
+        console.error('Error fetching notifications:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNotifications();
+  }, []);
 
-  useEffect(() => { fetchNotifications(); }, []);
-
-  const markAsRead = async (id, link) => {
-    const token = localStorage.getItem('fegoToken');
-    try {
-      await http.post(`/api/users/notifications/read/${id}`, {}, {
-        headers: { 'x-auth-token': token }
-      });
-      await fetchNotifications();
-      if (link) navigate(link);
-    } catch (e) {
-      console.error('Mark as read failed:', e);
-    }
-  };
+  if (loading) {
+    return (
+      <Box p={8} textAlign="center">
+        <Spinner size="xl" />
+      </Box>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: 600, margin: '30px auto' }}>
-      <h2>My Notifications</h2>
-      {notifications.length === 0 ? (
-        <p>You have no notifications.</p>
-      ) : (
-        notifications.map(note => (
-          <div
-            key={note._id}
-            onClick={() => markAsRead(note._id, note.link)}
-            style={{
-              padding: 10,
-              margin: '6px 0',
-              cursor: 'pointer',
-              background: note.isRead ? '#f7f7f7' : '#fff',
-              border: '1px solid #ccc',
-              borderLeft: note.isRead ? '4px solid #999' : '4px solid #0077ff'
-            }}
-          >
-            <strong>{note.message}</strong>
-            <small style={{ display: 'block', color: '#555' }}>
-              {new Date(note.createdAt).toLocaleString()}
-            </small>
-          </div>
-        ))
-      )}
-      <button onClick={() => navigate('/dashboard')} style={{ marginTop: 20 }}>Dashboard</button>
-    </div>
+    <Box p={8} maxW="800px" mx="auto">
+      <Heading size="lg" mb={6}>Notifications</Heading>
+      <VStack spacing={4} align="stretch">
+        {notifications.length === 0 ? (
+          <Text>No notifications</Text>
+        ) : (
+          notifications.map((notif, index) => (
+            <Box key={index} p={4} bg="gray.50" rounded="md">
+              <Text>{notif.message}</Text>
+            </Box>
+          ))
+        )}
+      </VStack>
+    </Box>
   );
-};
-
-export default NotificationPage;
+}
